@@ -1,0 +1,39 @@
+# Thermalisation:
+#    - Create SiC structure
+#    - Define IAP
+#    - Output
+
+atom_modify map array
+units metal
+atom_style atomic
+
+# Create SiC structure
+read_data 6H_SiC_unitcell
+replicate 80 80 7
+
+# Load interatomic potential
+pair_style tersoff
+pair_coeff * * 2005_SiC_I.tersoff Si C
+
+# --- THERMALISATION ---
+# Define timestep
+timestep 0.001
+# Give atoms initial velocities corresponding to 1200K - the temperature will halve instantly (equipartition theorem)
+velocity all create 1200.0 2257250 mom yes rot yes dist gaussian
+
+# Run in NPT ensemble to reach 600K and 0 pressure
+fix NPT all npt temp 600.0 600.0 $(100.0*dt) aniso 0.0 0.0 $(1000.0*dt)
+
+# Define output:
+thermo_style custom step dt time temp press ke pe etotal vol
+thermo 50
+dump thermo_dump all atom 2500 dump/SiC.*.dump 
+dump_modify thermo_dump sort id
+dump_modify thermo_dump pad 6
+
+run 2500
+
+unfix NPT
+
+# Save system state to restart file
+write_restart 0.restart

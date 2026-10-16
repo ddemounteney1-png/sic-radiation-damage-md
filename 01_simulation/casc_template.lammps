@@ -1,0 +1,49 @@
+read_restart {m}.restart
+
+pair_style tersoff
+pair_coeff * * 2005_SiC_I.tersoff Si C
+
+compute peatom all pe/atom
+compute keatom all ke/atom
+compute voronoi all voronoi/atom occupation
+
+# Define dynamic timestep
+fix dynamic_timestep all dt/reset 1 1e-07 0.002 0.05 emax 100
+
+# Keep number of atoms, volume and energy constant 
+fix NVE all nve 
+
+fix com all momentum 100 linear 1 1 1 angular rescale
+# fix thermo all langevin 600.0 600.0 $(1000.0*dt) 12345 # Uncomment to use Langevin method to include electron stopping
+
+group proj id {PKA_id}
+group host id != {PKA_id}
+
+# Calculate PKA velocity
+variable ek_pka equal {e}
+variable ek_pka equal {e}
+variable v_pka equal $(sqrt((2*v_ek_pka*1.6e-19)/(mass[{PKA_id}]/6.022e26))*1e-2)
+
+# Assign to random atom
+velocity proj set $(sin({theta})*cos({phi})*v_v_pka) $(sin({theta})*sin({phi})*v_v_pka) $(cos({theta})*v_v_pka) units box
+
+# Define outputs
+thermo_style custom step dt time temp press ke pe etotal econserve vol
+thermo 50
+
+run 5000
+
+# --- RUN A SHORT THERMALISATION TO REMOVE EXCESS HEAT ---
+unfix NVE
+unfix dynamic_timestep
+
+fix NPT all npt temp 600.0 600.0 $(100.0*dt) aniso 0.0 0.0 $(1000.0*dt)
+timestep 0.001
+run 1500
+unfix NPT
+
+# Create results file in dump folder (needs to be created first) after each cascade
+write_dump all custom dump/SiC.{n}.dump id type x y z modify pad 6
+
+# Write reference file for next cascade
+write_restart {n}.restart

@@ -1,0 +1,39 @@
+read_restart {m}.restart
+
+pair_style tersoff/zbl
+pair_coeff * * SiC.tersoff.zbl Si C
+
+compute peatom all pe/atom
+compute keatom all ke/atom
+compute voronoi all voronoi/atom occupation
+fix dynamic_timestep all dt/reset 1 1e-07 0.002 0.05 emax 100
+fix NVE all nve
+fix com all momentum 100 linear 1 1 1 angular rescale
+
+group proj id {PKA_id}
+group host id != {PKA_id}
+velocity proj set {v_x} {v_y} {v_z} units box
+
+thermo_style custom step dt time temp press ke pe etotal econserve
+thermo 50
+
+# Define outputs - think what you want to output. Look at the "compute" commands above, look up what they mean, and see what you might want to save from the simulation
+dump quickdump all custom 100 dump/SiC.*.dump id type x y z
+dump_modify quickdump sort id
+dump_modify quickdump pad 6
+
+run 1500
+
+# --- RUN A SHORT THERMALISATION TO REMOVE EXCESS HEAT ---
+# This attempts to return the system to a target temperature
+# It isn't very good, and you will want to look into thermostating the main cascade run better
+# Prashanth also suggested you run at 0K, so you may wish to find a way to do that
+
+unfix NVE
+unfix dynamic_timestep
+fix NPT all npt temp 600.0 600.0 $(100.0*dt) iso 0.0 0.0 $(1000.0*dt)
+timestep 0.001
+run 700
+unfix NPT
+
+write_restart {n}.restart

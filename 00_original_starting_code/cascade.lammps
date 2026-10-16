@@ -1,0 +1,24 @@
+read_restart therm.restart
+
+pair_style tersoff/zbl
+pair_coeff * * SiC.tersoff.zbl Si C
+
+reset_timestep 0
+compute peatom all pe/atom
+compute keatom all ke/atom
+compute voronoi all voronoi/atom occupation
+fix dynamic_timestep all dt/reset 1 1e-07 0.002 0.05 emax 100
+fix NVE all nve
+fix com all momentum 100 linear 1 1 1 angular rescale
+
+group proj id 1
+group host id != 1
+velocity proj set 400.0 400.0 400.0 units box
+
+thermo_style custom step dt time temp press ke pe etotal econserve
+thermo 50
+dump quickdump all custom 100 trj.lammpstrj id type x y z
+dump_modify quickdump sort id
+dump_modify quickdump pad 6
+
+run 2000
