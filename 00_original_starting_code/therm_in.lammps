@@ -1,0 +1,67 @@
+# Thermalisation:
+#    - Create FCC/zincblende SiC structure
+#    - Define IAP
+#    - Output
+
+atom_modify map array
+units metal
+atom_style atomic
+
+
+# --- STRUCTURE DEFINITION ---
+# Define a the FCC unit cell for CUBIC SiC 
+lattice custom 4.35 &
+        a1 1 0 0 &
+        a2 0 1 0 &
+        a3 0 0 1 &
+        basis 0.0 0.0 0.0 &
+        basis 0.5 0.5 0.0 &
+        basis 0.5 0.0 0.5 &
+        basis 0.0 0.5 0.5 &
+        basis 0.25 0.25 0.25 &
+        basis 0.75 0.75 0.25 &
+        basis 0.75 0.25 0.75 &
+        basis 0.25 0.75 0.75
+
+# Define a simulation box as repeats of the unit cell and create atoms in it
+region box block -10 10 -10 10 -10 10
+create_box 2 box
+# create atoms in the box with basis 1-4 as Si (type 1) and 5-8 as C (type 2)
+create_atoms 2 region box &
+        basis 1 1 & 
+        basis 2 1 & 
+        basis 3 1 & 
+        basis 4 1 & 
+        basis 5 2 & 
+        basis 6 2 & 
+        basis 7 2 &
+        basis 8 2
+
+# Load interatomic potential, defining type 1 as Si and type 2 as C:
+pair_style tersoff/zbl
+pair_coeff * * SiC.tersoff.zbl Si C
+# define masses
+mass 1 28
+mass 2 12
+
+# --- THERMALISATION ---
+# Define timestep
+timestep 0.001
+# Give atoms initial velocities corresponding to 1200K - the temperature will halve instantly (equipartition theorem)
+velocity all create 1200.0 2257250 mom yes rot yes dist gaussian
+
+# Run in NPT ensemble to reach 600K and 0 pressure
+fix NPT all npt temp 600.0 600.0 $(100.0*dt) iso 0.0 0.0 $(1000.0*dt)
+
+# Define output:
+thermo_style custom step dt time temp press ke pe etotal
+thermo 50
+dump thermo_dump all atom 2500 dump/SiC.*.dump
+dump_modify thermo_dump sort id
+dump_modify thermo_dump pad 6
+
+run 5000
+
+unfix NPT
+# Save system state to restart file
+write_restart 0.restart
