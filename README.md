@@ -2,7 +2,7 @@
 
 Molecular dynamics simulations of radiation damage in 6H silicon carbide, a candidate shielding material for fusion breeder blankets. The project was carried out by Group 4 of the Nuclear Industrial Training Programme at the University of Sheffield, working with UKAEA (January 2026).
 
-Half of the group irradiated SiC samples with 1.45 MeV neon ions; this code is the modelling half, which simulated a comparable damage dose in LAMMPS and compared the predicted swelling and X-ray diffraction against the experiment.
+Half of the group examined irradiated SiC samples with 1.45 MeV neon ions; this code is the modelling half, which simulated a comparable damage dose in LAMMPS and compared the predicted swelling and X-ray diffraction against the experiment.
 
 ## What the simulation does
 
